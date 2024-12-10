@@ -100,10 +100,16 @@ func (c *Compiler) parseQuery(stmt ast.Node, src string, o opts.Parser) (*Query,
 		// FOOTGUN: combineAnalysis mutates inference
 		anlys = combineAnalysis(inference, result)
 	} else {
+		fmt.Printf("c.analyzer is nil\n")
 		anlys, err = c.analyzeQuery(raw, rawSQL)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	fmt.Printf("anlys.Query %s\n", anlys.Query)
+	for _, a := range anlys.Columns {
+		fmt.Printf("anlys.Columns name: %s, type: %s\n", a.Name, a.DataType)
 	}
 
 	expanded := anlys.Query

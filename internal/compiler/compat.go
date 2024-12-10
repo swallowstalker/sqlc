@@ -12,6 +12,7 @@ import (
 func stringSlice(list *ast.List) []string {
 	items := []string{}
 	for _, item := range list.Items {
+		fmt.Printf("stringSlice ast.List.Items %v\n", item)
 		if n, ok := item.(*ast.String); ok {
 			items = append(items, n.Str)
 		}
@@ -28,16 +29,19 @@ type Relation struct {
 func parseRelation(node ast.Node) (*Relation, error) {
 	switch n := node.(type) {
 	case *ast.Boolean:
+		fmt.Printf("compat parseRelation ast.Boolean\n")
 		if n == nil {
 			return nil, fmt.Errorf("unexpected nil in %T node", n)
 		}
 		return &Relation{Name: "bool"}, nil
 
 	case *ast.List:
+		fmt.Printf("compat parseRelation ast.List\n")
 		if n == nil {
 			return nil, fmt.Errorf("unexpected nil in %T node", n)
 		}
 		parts := stringSlice(n)
+		fmt.Printf("stringSlice result: %v\n", parts)
 		switch len(parts) {
 		case 1:
 			return &Relation{
@@ -59,6 +63,7 @@ func parseRelation(node ast.Node) (*Relation, error) {
 		}
 
 	case *ast.RangeVar:
+		fmt.Printf("compat parseRelation ast.RangeVar\n")
 		if n == nil {
 			return nil, fmt.Errorf("unexpected nil in %T node", n)
 		}
@@ -75,6 +80,7 @@ func parseRelation(node ast.Node) (*Relation, error) {
 		return &name, nil
 
 	case *ast.TypeName:
+		fmt.Printf("compat parseRelation ast.TypeName\n")
 		if n == nil {
 			return nil, fmt.Errorf("unexpected nil in %T node", n)
 		}

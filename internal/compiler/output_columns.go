@@ -64,6 +64,8 @@ func (c *Compiler) outputColumns(qc *QueryCatalog, node ast.Node) ([]*Column, er
 	case *ast.InsertStmt:
 		targets = n.ReturningList
 	case *ast.SelectStmt:
+		fmt.Printf("compiler outputColumns entering ast.SelectStmt\n")
+
 		targets = n.TargetList
 		isUnion := len(targets.Items) == 0 && n.Larg != nil
 
@@ -156,6 +158,8 @@ func (c *Compiler) outputColumns(qc *QueryCatalog, node ast.Node) ([]*Column, er
 				cols = append(cols, &Column{Name: name, DataType: "bool", NotNull: true})
 			case lang.IsMathematicalOperator(op):
 				cols = append(cols, &Column{Name: name, DataType: "int", NotNull: true})
+			case lang.IsJSONOperator(op):
+				cols = append(cols, &Column{Name: name, DataType: "text", NotNull: false})
 			default:
 				cols = append(cols, &Column{Name: name, DataType: "any", NotNull: false})
 			}
@@ -255,8 +259,9 @@ func (c *Compiler) outputColumns(qc *QueryCatalog, node ast.Node) ([]*Column, er
 			}
 
 		case *ast.ColumnRef:
+			fmt.Printf("outputColumns entering ast.ColumnRef, name: %s\n", n.Name)
 			if hasStarRef(n) {
-
+				fmt.Printf("hasStarRef\n")
 				// add a column with a reference to an embedded table
 				if embed, ok := qc.embeds.Find(n); ok {
 					cols = append(cols, &Column{
@@ -303,6 +308,7 @@ func (c *Compiler) outputColumns(qc *QueryCatalog, node ast.Node) ([]*Column, er
 			cols = append(cols, columns...)
 
 		case *ast.FuncCall:
+			fmt.Printf("outputcolumns entering ast.FuncCall\n")
 			rel := n.Func
 			name := rel.Name
 			if res.Name != nil {
@@ -347,6 +353,7 @@ func (c *Compiler) outputColumns(qc *QueryCatalog, node ast.Node) ([]*Column, er
 			}
 
 		case *ast.TypeCast:
+			fmt.Printf("outputcolumns entering ast.TypeCast %s\n", n.TypeName.Name)
 			if n.TypeName == nil {
 				return nil, errors.New("no type name type cast")
 			}
@@ -357,6 +364,10 @@ func (c *Compiler) outputColumns(qc *QueryCatalog, node ast.Node) ([]*Column, er
 			if res.Name != nil {
 				name = *res.Name
 			}
+
+			debugRelation, _ := parseRelation(n)
+			fmt.Printf("outputcolumns parseRelation %v\n", debugRelation)
+
 			// TODO Validate column names
 			col := toColumn(n.TypeName)
 			col.Name = name
@@ -366,9 +377,17 @@ func (c *Compiler) outputColumns(qc *QueryCatalog, node ast.Node) ([]*Column, er
 					col.NotNull = false
 				}
 			}
+			if expr, ok := n.Arg.(*ast.A_Expr); ok {
+				if op := astutils.Join(expr.Name, ""); lang.IsJSONOperator(op) {
+					col.NotNull = false
+				}
+			}
 			cols = append(cols, col)
 
+			fmt.Printf("outputcolumns ast.TypeCast, type: %s, dataType: %s, originalName: %s \n", col.Type, col.DataType, col.OriginalName)
+
 		case *ast.SelectStmt:
+			fmt.Printf("outputcolumns entering ast.SelectStmt\n")
 			subcols, err := c.outputColumns(qc, n)
 			if err != nil {
 				return nil, err
@@ -762,5 +781,19 @@ func findColumnForRef(ref *ast.ColumnRef, tables []*Table, targetList *ast.List)
 		}
 	}
 
+	return nil
+}
+
+func findBaseColumnOnJSONQuery(node *ast.Node) *ast.ColumnRef {
+	result := astutils.Search(*node, func(visitedNode ast.Node) bool {
+		if _, isColumnRef := visitedNode.(*ast.ColumnRef); isColumnRef {
+			return true
+		}
+		return false
+	})
+
+	if len(result.Items) > 0 {
+		return result.Items[0].(*ast.ColumnRef)
+	}
 	return nil
 }

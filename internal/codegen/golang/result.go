@@ -300,6 +300,8 @@ func buildQueries(req *plugin.GenerateRequest, options *opts.Options, structs []
 				}
 			}
 
+			fmt.Printf("putoutcolumns retval struct %v\n", structs)
+
 			if gs == nil {
 				var columns []goColumn
 				for i, c := range query.Columns {
@@ -308,6 +310,8 @@ func buildQueries(req *plugin.GenerateRequest, options *opts.Options, structs []
 						Column: c,
 						embed:  newGoEmbed(c.EmbedTable, structs, req.Catalog.DefaultSchema),
 					})
+
+					fmt.Printf("putoutcolumns query column %s, type %s, embed %v\n", c.Name, c.Type, c.EmbedTable)
 				}
 				var err error
 				gs, err = columnsToStruct(req, options, gq.MethodName+"Row", columns, true)
@@ -409,6 +413,8 @@ func columnsToStruct(req *plugin.GenerateRequest, options *opts.Options, name st
 		} else {
 			seen[baseFieldName] = append(seen[baseFieldName], i)
 		}
+
+		fmt.Printf("gs.Field name: %s, type: %s\n", f.Name, f.Type)
 	}
 
 	// If a field does not have a known type, but another

@@ -159,6 +159,7 @@ func (p *Parser) Parse(r io.Reader) ([]ast.Statement, error) {
 
 	var stmts []ast.Statement
 	for _, raw := range tree.Stmts {
+		fmt.Printf("raw tree.Stmt: %s\n", raw.String())
 		n, err := translate(raw.Stmt)
 		if err == errSkip {
 			continue

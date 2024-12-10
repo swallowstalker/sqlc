@@ -1,6 +1,7 @@
 package golang
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/sqlc-dev/sqlc/internal/codegen/golang/opts"
@@ -64,6 +65,7 @@ func goType(req *plugin.GenerateRequest, options *opts.Options, col *plugin.Colu
 }
 
 func goInnerType(req *plugin.GenerateRequest, options *opts.Options, col *plugin.Column) string {
+	fmt.Printf("sdk.DataType of col %s, type: %s", col.Name, col.Type.String())
 	columnType := sdk.DataType(col.Type)
 	notNull := col.NotNull || col.IsArray
 
